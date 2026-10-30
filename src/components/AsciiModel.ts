@@ -28,13 +28,12 @@ export async function AsciiModel(container: HTMLElement) {
   const controls = new OrbitControls(camera, container);
   controls.enablePan = false; controls.enableZoom = false;
   controls.enableDamping = false; controls.rotateSpeed = .65;
-  let solid = false;
   let model: THREE.Group | undefined;
   let queued = false;
   function render() {
     if (queued || !model || document.hidden) return;
     queued = true;
-    requestAnimationFrame(() => { queued = false; solid ? renderer.render(scene, camera) : effect.render(scene, camera); });
+    requestAnimationFrame(() => { queued = false; effect.render(scene, camera); });
   }
   function resize() {
     const { width, height } = container.getBoundingClientRect();
@@ -50,15 +49,6 @@ export async function AsciiModel(container: HTMLElement) {
   controls.addEventListener('change', render);
   const observer = new ResizeObserver(resize); observer.observe(container);
   document.addEventListener('visibilitychange', render);
-  document.querySelector('#reset-view')!.addEventListener('click', reset);
-  const mode = document.querySelector<HTMLButtonElement>('#render-mode')!;
-  mode.addEventListener('click', () => {
-    solid = !solid; mode.textContent = solid ? 'ASCII view' : 'solid view';
-    mode.setAttribute('aria-pressed', String(solid));
-    if (solid) { effect.domElement.remove(); container.append(renderer.domElement); }
-    else { renderer.domElement.remove(); container.append(effect.domElement); }
-    render();
-  });
   container.addEventListener('keydown', event => {
     if (!model) return;
     if (event.key === 'Home') { model.rotation.set(0, 0, -.34); reset(); event.preventDefault(); return; }
@@ -83,7 +73,6 @@ export async function AsciiModel(container: HTMLElement) {
   } catch {
     effect.domElement.remove();
     status.textContent = 'The katana could not load. Reload to try again.';
-    mode.disabled = true;
   }
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
