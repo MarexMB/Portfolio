@@ -44,6 +44,7 @@ export async function AsciiModel(container: HTMLElement) {
     render();
   }
   function reset() {
+    model?.rotation.set(0, 0, -.34);
     camera.position.set(0, 0, 6.2); controls.target.set(0, 0, 0); controls.update(); render();
   }
   controls.addEventListener('change', render);
@@ -84,7 +85,8 @@ export async function AsciiModel(container: HTMLElement) {
     status.textContent = 'The katana could not load. Reload to try again.';
     mode.disabled = true;
   }
-  window.addEventListener('pagehide', () => {
+  window.addEventListener('pagehide', event => {
+    if (event.persisted) return;
     observer.disconnect(); controls.dispose(); renderer.dispose();
     scene.traverse(object => {
       if (object instanceof THREE.Mesh) {
