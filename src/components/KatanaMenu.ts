@@ -22,18 +22,29 @@ const fittings: Record<string, { wrap: string; base: string; metal: string; shea
 export function KatanaMenu(container: HTMLElement) {
   container.innerHTML = pages.map((page, i) => {
     const design = fittings[page.sword] ?? fittings.enten;
+    const bladeOutline = 'M17 43Q25 30 47 28L254 28V52L45 50Z';
+    const temperLine = page.sword === 'tobimune'
+      ? 'M17 43H254'
+      : 'M17 43L35 44Q43 40 50 45T66 45T82 46T98 46T114 46T130 47T146 47T162 47T178 48T194 48T210 48T226 49L254 49';
+    const steel = page.sword === 'magatsumi'
+      ? { upper: '#b9bec4', lower: '#cdd1d5' }
+      : page.sword === 'enten'
+        ? { upper: '#969ea7', lower: '#e7e9eb' }
+        : { upper: '#929ba5', lower: '#e1e5e9' };
     return `
     <a class="sword-link sword-${page.sword}" href="${page.href}" aria-label="${page.title}">
       <svg viewBox="0 0 560 80" aria-hidden="true">
         <defs>
-          <linearGradient id="steel-${i}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8e9499"/><stop offset=".48" stop-color="#ececeb"/><stop offset=".52" stop-color="#bec1c3"/><stop offset="1" stop-color="#727980"/></linearGradient>
+          <clipPath id="blade-clip-${i}"><path d="${bladeOutline}"/></clipPath>
           <pattern id="wrap-${i}" width="16" height="24" patternUnits="userSpaceOnUse"><rect width="16" height="24" fill="${design.base}"/><path d="M0 0 8 12 0 24M16 0 8 12 16 24" fill="none" stroke="${design.wrap}" stroke-width="6"/></pattern>
         </defs>
         <g class="sword">
-          <path d="M17 43Q25 30 47 28L254 28V52L45 50Z" fill="url(#steel-${i})"/>
+          <path d="${bladeOutline}" fill="${steel.upper}"/>
+          <g clip-path="url(#blade-clip-${i})">
+            <path d="${temperLine}L254 55H17Z" fill="${steel.lower}"/>
+            <path d="${temperLine}" fill="none" stroke="#f6f4ef" stroke-width=".65" opacity=".5"/>
+          </g>
           <path d="M17 43 45 50 254 52" fill="none" stroke="#f6f4ef"/>
-          <path d="M35 44Q43 40 50 45T66 45T82 46T98 46T114 46T130 47T146 47T162 47T178 48T194 48T210 48T226 49L245 49" fill="none" stroke="#f6f4ef" stroke-width=".8" opacity=".55"/>
-          <path d="M49 31H242" fill="none" stroke="#505862" stroke-width=".65" opacity=".4"/>
           <path d="m40 33 4 14M228 34h9m-7 3h5m-7 3h9" fill="none" stroke="#59616a" stroke-width=".7" opacity=".5"/>
           <text class="blade-label" x="142" y="45" text-anchor="middle">${page.title}</text>
           <rect x="246" y="27" width="12" height="26" rx="1" fill="${design.metal}"/>
