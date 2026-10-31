@@ -1,3 +1,3 @@
 ﻿# Marex / MB
 
-Moj lični sajt — projekti, beleške i ponešto o meni.
+Moj licni portfolio, kada se katane hover-uju otkrice se tekst pomocu kog mozete da se navigirate kroz sajt
