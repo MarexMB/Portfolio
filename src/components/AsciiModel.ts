@@ -4,7 +4,7 @@ import { AsciiEffect } from 'three/addons/effects/AsciiEffect.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // The same Three.js ASCII technique used by Bucov/my-site, with a downloaded
-// GLB model, responsive framing, and rendering only when the view changes.
+// GLB model, responsive framing, and a slow automatic rotation.
 export async function AsciiModel(container: HTMLElement) {
   const status = container.querySelector<HTMLElement>('.model-status')!;
   let renderer: THREE.WebGLRenderer;
@@ -29,11 +29,44 @@ export async function AsciiModel(container: HTMLElement) {
   controls.enablePan = false; controls.enableZoom = false;
   controls.enableDamping = false; controls.rotateSpeed = .65;
   let model: THREE.Group | undefined;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let animationFrame = 0;
+  let lastFrame = 0;
+  let interacting = false;
+  let suspended = false;
+  let disposed = false;
+  function stopRotation() {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+    lastFrame = 0;
+  }
+  function animate(time: number) {
+    animationFrame = requestAnimationFrame(animate);
+    if (!lastFrame) { lastFrame = time; return; }
+    const elapsed = time - lastFrame;
+    // Cap ASCII redraws at 30 fps; rotation speed is independent of refresh rate.
+    if (elapsed < 1000 / 30 || !model) return;
+    const seconds = Math.min(elapsed / 1000, .1);
+    lastFrame = time;
+    model.rotation.x += seconds * .036;
+    model.rotation.y += seconds * .036;
+    model.rotation.z += seconds * .054;
+    effect.render(scene, camera);
+  }
+  function syncRotation() {
+    stopRotation();
+    if (model && !disposed && !suspended && !document.hidden && !reducedMotion.matches && !interacting) {
+      animationFrame = requestAnimationFrame(animate);
+    }
+  }
+  controls.addEventListener('start', () => { interacting = true; syncRotation(); });
+  controls.addEventListener('end', () => { interacting = false; syncRotation(); });
+  reducedMotion.addEventListener('change', syncRotation);
   let queued = false;
   function render() {
-    if (queued || !model || document.hidden) return;
+    if (queued || !model || document.hidden || disposed) return;
     queued = true;
-    requestAnimationFrame(() => { queued = false; effect.render(scene, camera); });
+    requestAnimationFrame(() => { queued = false; if (!disposed) effect.render(scene, camera); });
   }
   function resize() {
     const { width, height } = container.getBoundingClientRect();
@@ -49,6 +82,8 @@ export async function AsciiModel(container: HTMLElement) {
   controls.addEventListener('change', render);
   const observer = new ResizeObserver(resize); observer.observe(container);
   document.addEventListener('visibilitychange', render);
+  document.addEventListener('visibilitychange', syncRotation);
+  window.addEventListener('pageshow', () => { suspended = false; syncRotation(); });
   container.addEventListener('keydown', event => {
     if (!model) return;
     if (event.key === 'Home') { model.rotation.set(0, 0, -.34); reset(); event.preventDefault(); return; }
@@ -69,13 +104,19 @@ export async function AsciiModel(container: HTMLElement) {
     asset.scale.multiplyScalar(scale);
     asset.position.copy(center.multiplyScalar(-scale));
     model = new THREE.Group(); model.add(asset); model.rotation.z = -.34;
-    scene.add(model); status.remove(); resize(); reset();
+    scene.add(model); status.remove(); resize(); reset(); syncRotation();
   } catch {
     effect.domElement.remove();
     status.textContent = 'The katana could not load. Reload to try again.';
   }
   window.addEventListener('pagehide', event => {
+    suspended = true;
+    stopRotation();
     if (event.persisted) return;
+    disposed = true;
+    reducedMotion.removeEventListener('change', syncRotation);
+    document.removeEventListener('visibilitychange', syncRotation);
+    document.removeEventListener('visibilitychange', render);
     observer.disconnect(); controls.dispose(); renderer.dispose();
     scene.traverse(object => {
       if (object instanceof THREE.Mesh) {
@@ -87,5 +128,5 @@ export async function AsciiModel(container: HTMLElement) {
         });
       }
     });
-  }, { once: true });
+  });
 }
