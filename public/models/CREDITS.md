@@ -8,5 +8,4 @@
 
 The GLB is stored locally and is not modified. Display rotation and scaling happen at runtime.
 
-The rendering approach is inspired by https://github.com/Bucov/my-site:
 Three.js, AsciiEffect, and OrbitControls. The implementation here is original.
