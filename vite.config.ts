@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: './',
+  base: '/Portfolio/',
+
   build: {
     rollupOptions: {
       input: {
@@ -10,7 +11,11 @@ export default defineConfig({
         projects: 'projects.html',
         notes: 'notes.html'
       },
-      output: { manualChunks: { three: ['three'] } }
+      output: {
+        manualChunks: {
+          three: ['three']
+        }
+      }
     }
   }
 });
